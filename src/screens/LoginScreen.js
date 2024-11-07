@@ -1,27 +1,43 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Button, Alert, StyleSheet } from 'react-native';
+import { loginUser } from '../../api/auth';  // API'den loginUser fonksiyonunu import edin
+
 
 const LoginScreen = ({ navigation }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
-  const users = {
-    sekreter: '123',
-    hoca: '123',
-    ogrenci: '123',
-    yonetim: '123'
-  };
-
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!username || !password) {
       Alert.alert('Hata', 'Kullanıcı adı ve şifre alanları boş olamaz.');
       return;
     }
 
-    if (users[username] === password) {
-      navigation.navigate(username.charAt(0).toUpperCase() + username.slice(1)); // Yönetim için yönlendirme
-    } else {
-      Alert.alert('Hata', 'Geçersiz kullanıcı adı veya şifre.');
+    try {
+      const userData = await loginUser(username, password); // loginUser fonksiyonu çağrılıyor
+      const userRole = userData.rol;
+
+      // Kullanıcı rolüne göre yönlendirme yapma
+      switch (userRole) {
+        case 'sekreter':
+          navigation.navigate('Sekreter');
+          break;
+        case 'hoca':
+          navigation.navigate('Hoca');
+          break;
+        case 'ogrenci':
+          navigation.navigate('Ogrenci');
+          break;
+        case 'yonetim':
+          navigation.navigate('Yonetim');
+          break;
+        default:
+          Alert.alert('Hata', 'Tanımlanmamış bir rol ile giriş yapıldı.');
+          break;
+      }
+    } catch (error) {
+      console.error('Giriş hatası:', error);
+      Alert.alert('Hata', error.message || 'Geçersiz kullanıcı adı veya şifre.');
     }
   };
 

@@ -1,112 +1,127 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, Button, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, Button, FlatList, TouchableOpacity, Alert, StyleSheet } from 'react-native';
+import { Picker } from '@react-native-picker/picker'; // Doğru kütüphaneden import edildi
+import styles from './styles'; // Stil dosyasını içe aktarın
 
 const YonetimScreen = () => {
   const [ad, setAd] = useState('');
   const [soyad, setSoyad] = useState('');
-  const [departman, setDepartman] = useState('');
   const [maas, setMaas] = useState('');
+  const [departman, setDepartman] = useState('');
+  const [sifre, setSifre] = useState('');
+  const [roller, setRoller] = useState([]);
   const [personelList, setPersonelList] = useState([]);
 
   useEffect(() => {
-    fetchPersonnel(); // İlk yüklemede personel verilerini çek
+    fetchRoles();
+    fetchPersonnel();
   }, []);
 
-  // Personel ekleme API çağrısı
+  const fetchRoles = async () => {
+    try {
+      const response = await fetch('http://192.168.56.1:3000/api/roller'); // API yolu
+      if (!response.ok) {
+        throw new Error('Roller alınamadı');
+      }
+      const data = await response.json();
+      setRoller(data);
+    } catch (error) {
+      console.error('Roller alınamadı:', error);
+      Alert.alert('Hata', 'Roller alınamadı.');
+    }
+  };
+
+  const fetchPersonnel = async () => {
+    try {
+      const response = await fetch('http://192.168.56.1:3000/api/personel'); // API yolu
+      if (!response.ok) {
+        throw new Error('API’den veriler alınamadı');
+      }
+      const data = await response.json();
+      setPersonelList(data);
+    } catch (error) {
+      console.error('API’den veriler alınamadı:', error);
+      Alert.alert('Hata', 'Personel verileri alınamadı.');
+    }
+  };
+
   const addPersonnel = async () => {
-    if (ad && soyad && departman && maas) {
+    if (ad && soyad && departman && sifre) {
+      const rol_id = roller.find(rol => rol.rol === departman)?.id;
+      if (!rol_id) {
+        Alert.alert('Hata', 'Geçerli bir rol seçin.');
+        return;
+      }
+
       try {
-        const response = await fetch('http://192.168.56.1:3000/personel', { // IP adresinizi güncelledik
+        const personnelData = { ad, soyad, departman, maas: maas ? parseInt(maas) : null, sifre, rol_id };
+        const response = await fetch('http://192.168.56.1:3000/api/personel', { // API yolu
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ ad, soyad, departman, maas: parseInt(maas) }),
+          body: JSON.stringify(personnelData),
         });
 
         if (response.ok) {
           console.log('Personel API üzerinden eklendi');
-          fetchPersonnel(); // Güncel personel listesini çek
-          clearInputs(); // Girdi alanlarını temizle
+          fetchPersonnel();
+          clearInputs();
+          Alert.alert('Başarılı', 'Personel eklendi.');
         } else {
-          console.error('Personel eklenemedi');
+          Alert.alert('Hata', 'Personel eklenemedi.');
         }
       } catch (error) {
-        console.error('API’ye bağlanırken hata oluştu: ', error);
+        Alert.alert('Hata', 'API’ye bağlanırken hata oluştu.');
       }
     } else {
-      alert('Tüm alanlar zorunludur.');
+      Alert.alert('Hata', 'Tüm alanlar zorunludur.');
     }
   };
 
-  // Tüm personeli API üzerinden çek
-  const fetchPersonnel = async () => {
-    try {
-      const response = await fetch('http://192.168.56.1:3000/personel'); // IP adresinizi güncelledik
-      const data = await response.json();
-      setPersonelList(data); // Güncel personel listesini kaydet
-    } catch (error) {
-      console.error('API’den veriler alınamadı: ', error);
-    }
-  };
-
-  // Personel silme API çağrısı
   const deletePersonnel = async (id) => {
     try {
-      const response = await fetch(`http://192.168.56.1:3000/personel/${id}`, { // IP adresinizi güncelledik
-        method: 'DELETE',
-      });
-
+      const response = await fetch(`http://192.168.56.1:3000/api/personel/${id}`, { method: 'DELETE' }); // API yolu
       if (response.ok) {
         console.log('Personel API üzerinden silindi');
-        fetchPersonnel(); // Güncel listeyi tekrar çek
+        fetchPersonnel(); // Listeden silinen personeli güncelle
+        Alert.alert('Başarılı', 'Personel silindi.');
       } else {
-        console.error('Personel silinemedi');
+        Alert.alert('Hata', 'Personel silinemedi.');
       }
     } catch (error) {
-      console.error('API’den silme işlemi yapılamadı: ', error);
+      Alert.alert('Hata', 'API’den silme işlemi yapılamadı.');
     }
   };
 
-  // Girdi alanlarını temizle
   const clearInputs = () => {
     setAd('');
     setSoyad('');
     setDepartman('');
     setMaas('');
+    setSifre('');
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Personel Yönetimi</Text>
 
-      <TextInput
-        placeholder="Ad"
-        value={ad}
-        onChangeText={setAd}
-        style={styles.input}
-      />
-      <TextInput
-        placeholder="Soyad"
-        value={soyad}
-        onChangeText={setSoyad}
-        style={styles.input}
-      />
-      <TextInput
-        placeholder="Departman"
-        value={departman}
-        onChangeText={setDepartman}
-        style={styles.input}
-      />
-      <TextInput
-        placeholder="Maaş"
-        value={maas}
-        onChangeText={setMaas}
-        keyboardType="numeric"
-        style={styles.input}
-      />
+      <TextInput placeholder="Ad" value={ad} onChangeText={setAd} style={styles.input} />
+      <TextInput placeholder="Soyad" value={soyad} onChangeText={setSoyad} style={styles.input} />
+      
+      <Text style={styles.label}>Departman Seçin</Text>
+      <Picker selectedValue={departman} onValueChange={(itemValue) => setDepartman(itemValue)} style={styles.picker}>
+        <Picker.Item label="Departman Seçin" value="" />
+        {roller.map((rol) => (
+          <Picker.Item key={rol.id} label={rol.rol} value={rol.rol} />
+        ))}
+      </Picker>
+      
+      <TextInput placeholder="Maaş" value={maas} onChangeText={setMaas} keyboardType="numeric" style={styles.input} />
+      <TextInput placeholder="Şifre" value={sifre} onChangeText={setSifre} secureTextEntry style={styles.input} />
+      
       <Button title="Personel Ekle" onPress={addPersonnel} />
-
+      
       <FlatList
         data={personelList}
         keyExtractor={(item) => item.id.toString()}
@@ -122,28 +137,5 @@ const YonetimScreen = () => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20 },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20 },
-  input: { borderBottomWidth: 1, marginBottom: 10, padding: 8 },
-  personelItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 10,
-    borderBottomWidth: 1,
-    borderColor: '#ddd',
-  },
-  deleteButton: {
-    backgroundColor: 'red',
-    padding: 5,
-    borderRadius: 5,
-  },
-  deleteButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
-});
 
 export default YonetimScreen;
