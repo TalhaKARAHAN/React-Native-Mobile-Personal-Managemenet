@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, Button, FlatList, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, TextInput, Button, FlatList, TouchableOpacity, Alert, StyleSheet } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
-import styles from './styles'; // Stil dosyasını içe aktarın
 
-const YonetimScreen = () => {
+const YonetimScreen = ({ navigation }) => {
   const [ad, setAd] = useState('');
   const [soyad, setSoyad] = useState('');
   const [maas, setMaas] = useState('');
@@ -11,18 +10,16 @@ const YonetimScreen = () => {
   const [sifre, setSifre] = useState('');
   const [roller, setRoller] = useState([]);
   const [personelList, setPersonelList] = useState([]);
-  const [selectedPersonnel, setSelectedPersonnel] = useState(null); // Seçili personeli tutmak için ekledik
-  const [groupedPersonnel, setGroupedPersonnel] = useState([]); // Gruplama sonuçları için state
+  const [selectedPersonnel, setSelectedPersonnel] = useState(null);
 
   useEffect(() => {
     fetchRoles();
     fetchPersonnel();
-    fetchGroupedPersonnel(); // Gruplama sonuçlarını al
   }, []);
 
   const fetchRoles = async () => {
     try {
-      const response = await fetch('http://192.168.56.1:3000/api/roller'); // API yolu
+      const response = await fetch('http://192.168.56.1:3000/api/roller');
       const data = await response.json();
       setRoller(data);
     } catch (error) {
@@ -32,7 +29,7 @@ const YonetimScreen = () => {
 
   const fetchPersonnel = async () => {
     try {
-      const response = await fetch('http://192.168.56.1:3000/api/personel'); // API yolu
+      const response = await fetch('http://192.168.56.1:3000/api/personel');
       const data = await response.json();
       setPersonelList(data);
     } catch (error) {
@@ -50,7 +47,7 @@ const YonetimScreen = () => {
 
       try {
         const personnelData = { ad, soyad, departman, maas: maas ? parseInt(maas) : null, sifre, rol_id };
-        const response = await fetch('http://192.168.56.1:3000/api/personel', { // API yolu
+        const response = await fetch('http://192.168.56.1:3000/api/personel', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -96,7 +93,7 @@ const YonetimScreen = () => {
           console.log('Personel güncellendi');
           fetchPersonnel();
           clearInputs();
-          setSelectedPersonnel(null); // Seçili personeli sıfırla
+          setSelectedPersonnel(null);
           Alert.alert('Başarılı', 'Personel güncellendi.');
         } else {
           Alert.alert('Hata', 'Personel güncellenemedi.');
@@ -109,7 +106,7 @@ const YonetimScreen = () => {
 
   const deletePersonnel = async (id) => {
     try {
-      const response = await fetch(`http://192.168.56.1:3000/api/personel/${id}`, { method: 'DELETE' }); // API yolu
+      const response = await fetch(`http://192.168.56.1:3000/api/personel/${id}`, { method: 'DELETE' });
       if (response.ok) {
         console.log('Personel API üzerinden silindi');
         fetchPersonnel();
@@ -127,8 +124,8 @@ const YonetimScreen = () => {
     setSoyad(personel.soyad);
     setDepartman(personel.departman);
     setMaas(personel.maas.toString());
-    setSifre(''); // Şifre alanını güncelleme için boş bırakıyoruz
-    setSelectedPersonnel(personel.id); // Seçili personelin ID'sini kaydedin
+    setSifre('');
+    setSelectedPersonnel(personel.id);
   };
 
   const clearInputs = () => {
@@ -137,18 +134,7 @@ const YonetimScreen = () => {
     setDepartman('');
     setMaas('');
     setSifre('');
-    setSelectedPersonnel(null); // Seçili personeli sıfırla
-  };
-
-  const fetchGroupedPersonnel = async () => {
-    try {
-      const response = await fetch('http://192.168.56.1:3000/api/personel/group-by-department'); // API yolu
-      const data = await response.json();
-      console.log('Gruplama Sonuçları:', data); // Gruplama sonuçlarını konsola yazdır
-      setGroupedPersonnel(data); // Gruplama sonuçlarını state'e kaydedin
-    } catch (error) {
-      console.error('Gruplama verileri alınamadı:', error);
-    }
+    setSelectedPersonnel(null);
   };
 
   return (
@@ -157,7 +143,7 @@ const YonetimScreen = () => {
 
       <TextInput placeholder="Ad" value={ad} onChangeText={setAd} style={styles.input} />
       <TextInput placeholder="Soyad" value={soyad} onChangeText={setSoyad} style={styles.input} />
-      
+
       <Text style={styles.label}>Departman Seçin</Text>
       <Picker selectedValue={departman} onValueChange={(itemValue) => setDepartman(itemValue)} style={styles.picker}>
         <Picker.Item label="Departman Seçin" value="" />
@@ -165,12 +151,12 @@ const YonetimScreen = () => {
           <Picker.Item key={rol.id} label={rol.rol} value={rol.rol} />
         ))}
       </Picker>
-      
+
       <TextInput placeholder="Maaş" value={maas} onChangeText={setMaas} keyboardType="numeric" style={styles.input} />
       <TextInput placeholder="Şifre" value={sifre} onChangeText={setSifre} secureTextEntry style={styles.input} />
-      
+
       <Button title={selectedPersonnel ? "Güncelle" : "Personel Ekle"} onPress={selectedPersonnel ? updatePersonnel : addPersonnel} />
-      
+
       <FlatList
         data={personelList}
         keyExtractor={(item) => item.id.toString()}
@@ -186,19 +172,22 @@ const YonetimScreen = () => {
           </View>
         )}
       />
-
-      <Text style={styles.title}>Gruplama Sonuçları</Text>
-      <FlatList
-        data={groupedPersonnel}
-        keyExtractor={(item) => item.departman}
-        renderItem={({ item }) => (
-          <View style={styles.groupItem}>
-            <Text>{`${item.departman} - Çalışan Sayısı: ${item.toplam_personel} - Toplam Maaş: ${item.totalSalary || 0}`}</Text>
-          </View>
-        )}
-      />
+      <Button title="Gruplama Sonuçlarını Gör" onPress={() => navigation.navigate('Gruplama')} />
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 20, backgroundColor: '#f5f5f5' },
+  title: { fontSize: 24, marginBottom: 20, textAlign: 'center', fontWeight: 'bold' },
+  input: { borderWidth: 1, borderColor: '#ccc', borderRadius: 5, marginBottom: 15, padding: 10 },
+  label: { marginBottom: 5, fontWeight: 'bold' },
+  picker: { height: 50, marginBottom: 15, borderColor: '#ccc', borderWidth: 1, borderRadius: 5 },
+  personelItem: { flexDirection: 'row', justifyContent: 'space-between', padding: 10, backgroundColor: '#fff', borderRadius: 5, marginVertical: 5 },
+  updateButton: { backgroundColor: '#00796b', padding: 5, borderRadius: 5 },
+  updateButtonText: { color: '#fff' },
+  deleteButton: { backgroundColor: '#d32f2f', padding: 5, borderRadius: 5 },
+  deleteButtonText: { color: '#fff' },
+});
 
 export default YonetimScreen;

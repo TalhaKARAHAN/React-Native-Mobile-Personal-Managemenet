@@ -1,65 +1,45 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, FlatList, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, Button, StyleSheet } from 'react-native';
 
-const OgrenciScreen = () => {
-  const [task, setTask] = useState('');
-  const [tasks, setTasks] = useState([]);
+const OgrenciScreen = ({ navigation }) => {
+  const [firstNumber, setFirstNumber] = useState('');
+  const [secondNumber, setSecondNumber] = useState('');
+  const [sum, setSum] = useState(0);
 
-  const addTask = () => {
-    if (task.trim() === '') {
-      Alert.alert('Hata', 'Lütfen bir görev girin.');
-      return;
-    }
-    setTasks([...tasks, { id: Date.now().toString(), title: task, completed: false }]);
-    setTask('');
-  };
-
-  const toggleTaskCompletion = (taskId) => {
-    setTasks(tasks.map(task => task.id === taskId ? { ...task, completed: !task.completed } : task));
-  };
-
-  const removeTask = (taskId) => {
-    setTasks(tasks.filter(task => task.id !== taskId));
+  const calculateSum = () => {
+    const total = parseFloat(firstNumber) + parseFloat(secondNumber);
+    setSum(total);
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Öğrenci Görevleri</Text>
+      <Text style={styles.title}>Toplama İşlemi</Text>
       <TextInput
         style={styles.input}
-        placeholder="Görev Girin"
-        value={task}
-        onChangeText={setTask}
+        placeholder="Birinci Sayı"
+        keyboardType="numeric"
+        value={firstNumber}
+        onChangeText={setFirstNumber}
       />
-      <Button title="Görev Ekle" onPress={addTask} color="#00796b" />
-      <FlatList
-        data={tasks}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={styles.taskContainer}>
-            <TouchableOpacity onPress={() => toggleTaskCompletion(item.id)}>
-              <Text style={[styles.taskText, item.completed && styles.completedTask]}>
-                {item.title}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => removeTask(item.id)}>
-              <Text style={styles.deleteText}>Sil</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+      <TextInput
+        style={styles.input}
+        placeholder="İkinci Sayı"
+        keyboardType="numeric"
+        value={secondNumber}
+        onChangeText={setSecondNumber}
       />
+      <Button title="Topla" onPress={calculateSum} color="#00796b" />
+      <Text style={styles.result}>Toplam: {sum}</Text>
+      <Button title="İkinci Sayfaya Git" onPress={() => navigation.navigate('Ikinci')} color="#00796b" />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20 },
-  title: { fontSize: 24, marginBottom: 20, textAlign: 'center' },
-  input: { borderBottomWidth: 1, marginBottom: 15, padding: 8 },
-  taskContainer: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10 },
-  taskText: { fontSize: 18 },
-  completedTask: { textDecorationLine: 'line-through', color: 'gray' },
-  deleteText: { color: 'red', fontWeight: 'bold' },
+  container: { flex: 1, padding: 20, justifyContent: 'center', backgroundColor: '#f9f9f9' },
+  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20, textAlign: 'center' },
+  input: { borderWidth: 1, borderColor: '#ddd', marginBottom: 15, padding: 10, borderRadius: 5 },
+  result: { fontSize: 18, fontWeight: 'bold', marginTop: 20, textAlign: 'center' },
 });
 
 export default OgrenciScreen;
